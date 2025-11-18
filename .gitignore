@@ -1,4 +1,30 @@
-.env
-__pycache__/
-*.pyc
+# Entornos virtuales
 .venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.dist/
+
+# Configuración local / secretos
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# PyCharm / IntelliJ
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

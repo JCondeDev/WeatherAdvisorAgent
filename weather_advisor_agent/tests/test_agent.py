@@ -2,7 +2,7 @@ import asyncio
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
-from enviro_agent import root_agent
+from weather_advisor_agent import root_agent
 
 async def main():
     """Runs the environmental agent with a sample dialogue."""
