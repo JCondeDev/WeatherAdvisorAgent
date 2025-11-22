@@ -7,7 +7,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 
 from weather_advisor_agent import envi_root_agent
-from weather_advisor_agent.utils.observability import observability
+from weather_advisor_agent.utils import observability
 
 logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 

@@ -54,53 +54,59 @@ async def main():
     queries = [
       "I would like to know the current weather in my area.",
       "I am currently around Sacramento, California.",
-      "Generate a final recommendations report."
+      "Generate a recommendations report.",
+      "Save it to reports/Envi_recomendations.md"
     ]
   elif test == 3:
     queries = [
-      "I want to go hiking this weekend near Mexico City.",
-      "What are some good locations?",
+      "I want to go hiking this weekend near Mexico City. What are some good locations?",
       "What is the weather like in those locations?",
-      "Generate a detailed report with recommendations."
+      "Generate a recommendations report.",
+      "Save it to reports/Envi_recomendations.md"
     ]
 
-  for query in queries:
+  logging.getLogger("google_genai.types").setLevel(logging.ERROR)
+
+  for i, query in enumerate(queries, 1):
     print("=== USER INPUT ===")
     print(f"\n>>> {query}\n")
     last_user_facing_text = None
 
-    async for event in runner.run_async(
-      user_id=USER_ID,
-      session_id=SESSION_ID,
-      new_message=genai_types.Content(role="user",parts=[genai_types.Part.from_text(text=query)])
-    ):
-      if not event.is_final_response():
-        continue
-      content = getattr(event, "content", None)
-      if not content:
-        continue
-      parts = getattr(content, "parts", None)
-      if not parts:
-        continue
-      for part in parts:
-        text = getattr(part, "text", None)
-        if not text:
+    with observability.trace_operation(f"user_query_{i}",attributes={"query": query[:50]}):
+      async for event in runner.run_async(
+        user_id=USER_ID,
+        session_id=SESSION_ID,
+        new_message=genai_types.Content(role="user",parts=[genai_types.Part.from_text(text=query)])
+      ):
+        if not event.is_final_response():
           continue
-        if _looks_like_env_snapshot_json(text):
+        content = getattr(event, "content", None)
+        if not content:
           continue
+        parts = getattr(content, "parts", None)
+        if not parts:
+          continue
+        for part in parts:
+          text = getattr(part, "text", None)
+          if not text:
+            continue
+          if _looks_like_env_snapshot_json(text):
+            continue
 
-        last_user_facing_text = text
+          last_user_facing_text = text
 
     print("=== ENVI RESPONSE ===")
     if last_user_facing_text:
       if len(last_user_facing_text) > 1000:
-        print(last_user_facing_text[:1000] + "\n... (truncated)")
+        print(f"{last_user_facing_text[:1000]} \n... (truncated)\n")
       else:
-        print(last_user_facing_text)
+        print(f"{last_user_facing_text}\n")
     else:
-      print("[No user-facing text in response]")
+      print("[No user-facing text in response]\n")
 
   print("METRICS & TRACES:")
+  observability.print_metrics_summary()
+
   metrics_file = Path("weather_advisor_agent/data/observability_metrics_test.json")
   observability.export_metrics(str(metrics_file))
 

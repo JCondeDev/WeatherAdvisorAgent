@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -125,12 +126,11 @@ class EnviMetrics:
     summary = self.get_summary()
     
     print("METRICS SUMMARY")
-    print("="*70)
-    print(f"Runtime: {summary['runtime_seconds']}s")
-    print(f"Agent Invocations: {summary['total_agent_invocations']}")
-    print(f"Tool Calls: {summary['total_tool_calls']}")
-    print(f"Success Rate: {summary['success_rate_percent']}%")
-    print(f"Failed Operations: {summary['failed_operations']}")
+    print(f" -Runtime: {summary['runtime_seconds']}s")
+    print(f" -Agent Invocations: {summary['total_agent_invocations']}")
+    print(f" -Tool Calls: {summary['total_tool_calls']}")
+    print(f" -Success Rate: {summary['success_rate_percent']}%")
+    print(f" -Failed Operations: {summary['failed_operations']}")
     
     if summary['agent_call_breakdown']:
       print("\nAgent Calls:")
@@ -158,7 +158,7 @@ class EnviObservability:
     def log_agent_start(self, agent_name: str, context: Optional[Dict[str, Any]] = None):
       self.metrics.increment_agent_calls(agent_name)
       context_str = f"Context: {context}" if context else ""
-      self.logger.info(f"\n[AGENT] {agent_name}{context_str} |\n")
+      self.logger.info(f"[--AGENT--] {agent_name}{context_str} |\n")
     
     def log_agent_complete(self,agent_name: str,output_key: str,success: bool = True,duration_ms: Optional[float] = None):
       if success:
@@ -168,7 +168,7 @@ class EnviObservability:
         self.metrics.failed_operations += 1
         status = "FAILED"
       
-      self.logger.info(f"\n[AGENT] {agent_name} | Output: {output_key} | {status} |\n")
+      self.logger.info(f"[--AGENT--] {agent_name} | Output: {output_key} | {status} |\n")
       
       if duration_ms:
         self.metrics.record_agent_duration(agent_name, duration_ms)
@@ -176,7 +176,7 @@ class EnviObservability:
     def log_tool_call(self, tool_name: str, params: Dict[str, Any]):
       self.metrics.increment_tool_calls(tool_name)
       param_preview = str(params)[:100]
-      self.logger.info(f"\n[TOOL] {tool_name} | Params: {param_preview} |\n")
+      self.logger.info(f"[--TOOL--] {tool_name} | Params: {param_preview} |\n")
     
     def log_tool_complete(self,tool_name: str,success: bool = True,duration_ms: Optional[float] = None):
       if success:
@@ -184,7 +184,7 @@ class EnviObservability:
       else:
         status = "FAILED"
 
-      self.logger.info(f"\n[TOOL] {tool_name} | {status} |\n")
+      self.logger.info(f"[--TOOL--] {tool_name} | {status} |\n")
       
       if duration_ms:
         self.metrics.record_tool_duration(tool_name, duration_ms)
@@ -199,18 +199,18 @@ class EnviObservability:
       else:
         status = "NOT PASSED"
 
-      self.logger.info(f"\n[VALIDATION] {checker_name} | {status}|\n")
+      self.logger.info(f"[--VALIDATION--] {checker_name} | {status}|\n")
   
     def log_error(self, context: str, error: Exception, details: Optional[str] = None):
       error_type = type(error).__name__
       self.metrics.record_error(error_type)
-      self.logger.error(f"\n[ERROR] {context} | {error_type}: {str(error)} |\n",exc_info=True)
+      self.logger.error(f"[--ERROR--] {context} | {error_type}: {str(error)} |\n",exc_info=True)
     
     def log_state_change(self, key: str, action: str, value_preview: str = ""):
       preview = f"Value: {value_preview[:50]}" if value_preview else ""
-      self.logger.debug(f"\n[STATE] {action} key '{key}'{preview} |\n")
+      self.logger.debug(f"[--STATE--] {action} key '{key}'{preview} |\n")
     
-    #TRACING
+
     @contextmanager
     def trace_operation(self,operation_name: str,attributes: Optional[Dict[str, Any]] = None,parent_span_id: Optional[str] = None):
       if not self.enable_traces:
@@ -220,19 +220,19 @@ class EnviObservability:
       span = TraceSpan(name=operation_name,start_time=time.time(),parent_span_id=parent_span_id,attributes=attributes or {})
       
       self.active_spans[span.span_id] = span
-      self.logger.debug(f"\n[TRACE] {operation_name} | span_id: {span.span_id} |\n")
+      self.logger.debug(f"[--TRACE--] {operation_name} | span_id: {span.span_id} |\n")
       
       try:
         yield span
         span.status = "success"
         span.end_time = time.time()
-        self.logger.debug(f"\n[TRACE] {operation_name} | Success |\n")
+        self.logger.debug(f"[--TRACE--] {operation_name} | Success |\n")
       except Exception as e:
         span.status = "error"
         span.end_time = time.time()
         span.attributes["error"] = str(e)
         span.attributes["error_type"] = type(e).__name__
-        self.logger.debug(f"\n[TRACE] {operation_name} | Error | Type: {type(e).__name__} |\n")
+        self.logger.debug(f"[--TRACE--] {operation_name} | Error | Type: {type(e).__name__} |\n")
         raise
       finally:
         self.traces.append(span)
@@ -256,25 +256,17 @@ class EnviObservability:
         "total_traces": total_traces,
         "successful": successful_traces,
         "failed": failed_traces,
-        "avg_duration_ms": round(avg_duration, 2),
-        "max_duration_ms": round(max_duration, 2),
-        "min_duration_ms": round(min_duration, 2),
+        "avg_duration_ms": avg_duration,
+        "max_duration_ms": max_duration,
+        "min_duration_ms": min_duration,
         "traces": [t.to_dict() for t in self.traces[-10:]]
       }
     
     def export_traces(self, filepath: str):
-      import json
-      trace_data = {
-        "summary": self.get_trace_summary(),
-        "all_traces": [t.to_dict() for t in self.traces]
-      }
-      
+      trace_data = {"summary": self.get_trace_summary(),"all_traces": [t.to_dict() for t in self.traces]}
       with open(filepath, 'w') as f:
         json.dump(trace_data, f, indent=2)
-      
-      self.logger.info(f"\nExported {len(self.traces)} traces to {filepath} |\n")
-    
-    #METRICS
+
     def get_metrics_summary(self) -> Dict[str, Any]:
       """Get comprehensive metrics summary"""
       return self.metrics.get_summary()
@@ -289,8 +281,6 @@ class EnviObservability:
       with open(filepath, 'w') as f:
           json.dump(self.metrics.get_summary(), f, indent=2)
         
-      self.logger.info(f"\nExported metrics to {filepath} |\n")
-
 
 observability = EnviObservability(enable_traces=True)
 
@@ -310,7 +300,7 @@ def log_exceptions(context: str):
       try:
         return func(*args, **kwargs)
       except Exception as e:
-          observability.log_error(context, e, details=f"Function: {func.__name__}")
-          raise
+        observability.log_error(context, e, details=f"Function: {func.__name__}")
+        raise
     return wrapper
   return decorator

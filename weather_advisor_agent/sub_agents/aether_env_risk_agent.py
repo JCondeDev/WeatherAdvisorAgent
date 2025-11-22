@@ -1,12 +1,12 @@
-from ..config import config
+from weather_advisor_agent.config import config
 
 from google.adk.agents import Agent, LoopAgent
 
-from ..utils import aether_risk_callback
+from weather_advisor_agent.utils import aether_risk_callback
 
-from ..validation_checkers import EnvRiskValidationChecker
+from weather_advisor_agent.validation_checkers import EnvRiskValidationChecker
 
-from ..utils.observability import observability
+from weather_advisor_agent.utils import observability
 
 aether_env_risk_agent = Agent(
   model=config.critic_model,

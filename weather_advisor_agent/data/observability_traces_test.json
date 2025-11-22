@@ -1,23 +1,57 @@
 {
   "summary": {
-    "total_traces": 1,
-    "successful": 1,
+    "total_traces": 4,
+    "successful": 4,
     "failed": 0,
-    "avg_duration_ms": 16428.92,
-    "max_duration_ms": 16428.92,
-    "min_duration_ms": 16428.92,
+    "avg_duration_ms": 30212.575793266296,
+    "max_duration_ms": 55821.83861732483,
+    "min_duration_ms": 13230.385541915894,
     "traces": [
       {
-        "span_id": "fetch_weather_data_1763696777704",
-        "name": "fetch_weather_data",
-        "start_time": 1763696777.7049634,
-        "end_time": 1763696794.1338816,
-        "duration_ms": 16428.91812324524,
+        "span_id": "user_query_1_1763849794723",
+        "name": "user_query_1",
+        "start_time": 1763849794.723584,
+        "end_time": 1763849850.5454226,
+        "duration_ms": 55821.83861732483,
         "status": "success",
         "attributes": {
-          "location": "Sacramento, California",
-          "test": true,
-          "completed": true
+          "query": "I want to go hiking this weekend near Mexico City."
+        },
+        "parent_span_id": null
+      },
+      {
+        "span_id": "user_query_2_1763849850548",
+        "name": "user_query_2",
+        "start_time": 1763849850.5480568,
+        "end_time": 1763849863.7784424,
+        "duration_ms": 13230.385541915894,
+        "status": "success",
+        "attributes": {
+          "query": "What is the weather like in those locations?"
+        },
+        "parent_span_id": null
+      },
+      {
+        "span_id": "user_query_3_1763849863779",
+        "name": "user_query_3",
+        "start_time": 1763849863.7790167,
+        "end_time": 1763849893.9579875,
+        "duration_ms": 30178.97081375122,
+        "status": "success",
+        "attributes": {
+          "query": "Generate a recommendations report."
+        },
+        "parent_span_id": null
+      },
+      {
+        "span_id": "user_query_4_1763849893959",
+        "name": "user_query_4",
+        "start_time": 1763849893.9599805,
+        "end_time": 1763849915.5790887,
+        "duration_ms": 21619.108200073242,
+        "status": "success",
+        "attributes": {
+          "query": "Save it to reports/Envi_recomendations.md"
         },
         "parent_span_id": null
       }
@@ -25,16 +59,50 @@
   },
   "all_traces": [
     {
-      "span_id": "fetch_weather_data_1763696777704",
-      "name": "fetch_weather_data",
-      "start_time": 1763696777.7049634,
-      "end_time": 1763696794.1338816,
-      "duration_ms": 16428.91812324524,
+      "span_id": "user_query_1_1763849794723",
+      "name": "user_query_1",
+      "start_time": 1763849794.723584,
+      "end_time": 1763849850.5454226,
+      "duration_ms": 55821.83861732483,
       "status": "success",
       "attributes": {
-        "location": "Sacramento, California",
-        "test": true,
-        "completed": true
+        "query": "I want to go hiking this weekend near Mexico City."
+      },
+      "parent_span_id": null
+    },
+    {
+      "span_id": "user_query_2_1763849850548",
+      "name": "user_query_2",
+      "start_time": 1763849850.5480568,
+      "end_time": 1763849863.7784424,
+      "duration_ms": 13230.385541915894,
+      "status": "success",
+      "attributes": {
+        "query": "What is the weather like in those locations?"
+      },
+      "parent_span_id": null
+    },
+    {
+      "span_id": "user_query_3_1763849863779",
+      "name": "user_query_3",
+      "start_time": 1763849863.7790167,
+      "end_time": 1763849893.9579875,
+      "duration_ms": 30178.97081375122,
+      "status": "success",
+      "attributes": {
+        "query": "Generate a recommendations report."
+      },
+      "parent_span_id": null
+    },
+    {
+      "span_id": "user_query_4_1763849893959",
+      "name": "user_query_4",
+      "start_time": 1763849893.9599805,
+      "end_time": 1763849915.5790887,
+      "duration_ms": 21619.108200073242,
+      "status": "success",
+      "attributes": {
+        "query": "Save it to reports/Envi_recomendations.md"
       },
       "parent_span_id": null
     }

@@ -7,35 +7,28 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents import Agent, LoopAgent
 from google.adk.tools import FunctionTool
 
-from ..tools.web_access_tools import (fetch_env_snapshot_from_open_meteo,geocode_place_name)
+from weather_advisor_agent.tools import (geocode_place_name,fetch_and_store_snapshot,get_last_snapshot)
 
-from ..validation_checkers import EnvSnapshotValidationChecker
+from weather_advisor_agent.validation_checkers import EnvSnapshotValidationChecker
 
-from ..utils.observability import observability
+from weather_advisor_agent.utils import observability
 
 logger = logging.getLogger(__name__)
-_last_snapshot = None
-
-def fetch_and_store_snapshot(latitude: float, longitude: float):
-  global _last_snapshot
-  _last_snapshot = fetch_env_snapshot_from_open_meteo(latitude, longitude)
-  return _last_snapshot
 
 def zephyr_callback_from_global(callback_context: CallbackContext) -> Content:
-  global _last_snapshot
-  
-  if _last_snapshot:
-    callback_context.session.state["env_snapshot"] = _last_snapshot
+  last_snapshot = get_last_snapshot()
+  if last_snapshot:
+    callback_context.session.state["env_snapshot"] = last_snapshot
     observability.log_agent_complete("zephyr_env_data_agent","env_snapshot",success=True)
     logger.info("Stored snapshot. | ")
     
-    if isinstance(_last_snapshot, dict) and "current" in _last_snapshot:
-      current = _last_snapshot["current"]
+    if isinstance(last_snapshot, dict) and "current" in last_snapshot:
+      current = last_snapshot["current"]
       temp = current.get("temperature_c", "?")
       wind = current.get("wind_speed_10m_ms", "?")
       logger.info(f"Data: {temp}°C, {wind} m/s wind. | ")
     
-    _last_snapshot = None
+    last_snapshot = None
   else:
     callback_context.session.state["env_snapshot"] = {}
     observability.log_agent_complete("zephyr_env_data_agent","env_snapshot",success=False)

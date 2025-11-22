@@ -1,12 +1,11 @@
 import requests
 import time
 import logging
-from typing import Dict, List, Any, cast
+from typing import Dict, List, Any, cast, Optional
 
 from weather_advisor_agent.utils.observability import observability
 
 logger = logging.getLogger(__name__)
-
 
 def fetch_env_snapshot_from_open_meteo(latitude: float,longitude: float) -> Dict[str, Any]:
   """Fetches environmental snapshot from Open-Meteo API"""
@@ -73,7 +72,7 @@ def fetch_env_snapshot_from_open_meteo(latitude: float,longitude: float) -> Dict
     duration_ms = (time.time() - start_time) * 1000
     observability.log_tool_complete("fetch_env_snapshot_from_open_meteo",success=True,duration_ms=duration_ms)
     
-    logger.info(f"Successfully fetched snapshot for ({latitude}, {longitude}) | ")
+    logger.info(f"Successfully fetched snapshot for ({latitude}, {longitude}). \n")
     
     return snapshot
   
@@ -102,26 +101,32 @@ def fetch_env_snapshot_from_open_meteo(latitude: float,longitude: float) -> Dict
     raise
 
 
-def geocode_place_name(place_name: str,max_results: int = 3) -> Dict[str, Any]:
-  """Geocodes a place name to coordinates using Open-Meteo Geocoding API."""
+def geocode_place_name(place_name: str, max_results: int = 3, region_hint: Optional[str] = None) -> Dict[str, Any]:
+  """Geocodes a place name to coordinates using Open-Meteo Geocoding API"""
+  from weather_advisor_agent.utils import observability
+  
   start_time = time.time()
   
-  observability.log_tool_call("geocode_place_name", {"place_name": place_name,"max_results": max_results})
+  observability.log_tool_call(
+    "geocode_place_name",{
+      "place_name": place_name,
+      "max_results": max_results,
+      "region_hint": region_hint
+    }
+  )
   
   url = "https://geocoding-api.open-meteo.com/v1/search"
   
-  def _call_api(name: str) -> Dict[str, Any]:
+  def _call_api(name: str, count: int = None) -> Dict[str, Any]:
     try:
-      logger.debug(f"Geocoding: '{name}'")
       resp = requests.get(
         url,
         params={
           "name": name,
-          "count": max_results,
+          "count": count or max_results,
           "language": "en",
           "format": "json"
-        },
-        timeout=20
+        },timeout=20
       )
       resp.raise_for_status()
       data = resp.json()
@@ -131,37 +136,79 @@ def geocode_place_name(place_name: str,max_results: int = 3) -> Dict[str, Any]:
       return {
         "ok": False,
         "error": "timeout",
-        "message": f"Timeout contacting Open-Meteo geocoding for '{name}' | "
+        "message": f"Timeout."
       }
     except requests.RequestException as e:
       return {
         "ok": False,
         "error": "request_failed",
-        "message": f"Request error ({type(e).__name__}) for '{name}' | "
+        "message": f"Request failed."
       }
 
   cleaned = place_name.strip()
-  candidates: list[str] = [cleaned]
+  candidates: list[str] = []
+  candidates.append(cleaned)
+  suffixes_to_remove = [
+    " National Park",
+    " national park",
+    " State Park", 
+    " state park",
+    " Park",
+    " park",
+    " Forest",
+    " forest",
+    " Mountain",
+    " mountain",
+    " Volcano",
+    " volcano",
+    " Trail",
+    " trail",
+    " Reserve",
+    " reserve"
+  ]
+  
+  for suffix in suffixes_to_remove:
+    if cleaned.endswith(suffix):
+      without_suffix = cleaned[:-len(suffix)].strip()
+      if without_suffix:
+        candidates.append(without_suffix)
+      break
+  
+  if region_hint:
+    region_hint_clean = region_hint.strip()
+    if region_hint_clean.lower() not in cleaned.lower():
+      candidates.append(f"{cleaned}, {region_hint_clean}")
+      for suffix in suffixes_to_remove:
+        if cleaned.endswith(suffix):
+          without_suffix = cleaned[:-len(suffix)].strip()
+          if without_suffix:
+            candidates.append(f"{without_suffix}, {region_hint_clean}")
+          break
+  
+  words = cleaned.split()
+  if len(words) >= 3:
+    candidates.append(" ".join(words[:2]))
+  if len(words) >= 2:
+    candidates.append(words[0])
   
   parts = [p.strip() for p in cleaned.split(",") if p.strip()]
   if len(parts) >= 2:
     candidates.append(", ".join(parts[:2]))
-  if len(parts) >= 1:
     candidates.append(parts[0])
   
   seen = set()
   unique_candidates: list[str] = []
   for c in candidates:
-    if c not in seen:
-      seen.add(c)
+    c_lower = c.lower()
+    if c_lower not in seen and c:
+      seen.add(c_lower)
       unique_candidates.append(c)
-  
-  logger.debug(f"Geocoding candidates: {unique_candidates} | ")
   
   last_error: Dict[str, Any] | None = None
   
-  for candidate in unique_candidates:
-    api_result = _call_api(candidate)
+  for i, candidate in enumerate(unique_candidates):
+    attempt_max_results = max_results if i == 0 else min(max_results * 2, 10)
+    api_result = _call_api(candidate, attempt_max_results)
     
     if not api_result.get("ok"):
       last_error = api_result
@@ -169,55 +216,50 @@ def geocode_place_name(place_name: str,max_results: int = 3) -> Dict[str, Any]:
     
     data = cast(Dict[str, Any], api_result["data"])
     raw_results: List[Dict[str, Any]] = data.get("results") or []
-    results: List[Dict[str, Any]] = []
     
+    if not raw_results:
+      continue
+    
+    results: List[Dict[str, Any]] = []
     for r in raw_results:
       results.append({
         "name": r.get("name"),
         "latitude": r.get("latitude"),
         "longitude": r.get("longitude"),
         "country": r.get("country"),
-        "admin1": r.get("admin1")
+        "admin1": r.get("admin1"),
+        "admin2": r.get("admin2"),
+        "population": r.get("population")
       })
+    results = results[:max_results]
     
     if results:
       duration_ms = (time.time() - start_time) * 1000
-      observability.log_tool_complete(
-        "geocode_place_name",
-        success=True,
-        duration_ms=duration_ms
-      )
-      
-      logger.info(
-        f"Geocoded '{candidate}' into {len(results)} result(s) | "
-        f"in {duration_ms:.0f}ms"
-      )
-      
+      observability.log_tool_complete("geocode_place_name", success=True, duration_ms=duration_ms)
       return {
         "query": candidate,
-        "results": results
+        "original_query": place_name,
+        "results": results,
+        "source": "open_meteo_api",
+        "region_hint": region_hint
       }
 
   duration_ms = (time.time() - start_time) * 1000
   
   out: Dict[str, Any] = {
     "query": place_name,
-    "results": []
+    "results": [],
+    "attempted_variations": unique_candidates[:5],
+    "region_hint": region_hint
   }
   
   if last_error is not None:
     out["error"] = last_error.get("error")
     out["error_message"] = last_error.get("message")
-    logger.warning(
-      f"⚠️ Geocoding failed for '{place_name}': {last_error.get('message')}"
-    )
+    logger.warning(f"All attempts failed.")
   else:
-    logger.warning(f"⚠️ No geocoding results found for '{place_name}'")
+    logger.warning(f"No geocoding results found.")
   
-  observability.log_tool_complete(
-    "geocode_place_name",
-    success=False,
-    duration_ms=duration_ms
-  )
+  observability.log_tool_complete("geocode_place_name", success=False, duration_ms=duration_ms)
   
   return out

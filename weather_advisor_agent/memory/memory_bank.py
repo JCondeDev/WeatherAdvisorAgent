@@ -273,4 +273,4 @@ class EnviMemoryBank:
       ]
     }
 
-EnviMemory = EnviMemoryBank(storage_path="data/envi_memory.json")
+EnviMemory = EnviMemoryBank(storage_path="data/weather_advisor_agent/envi_memory.json")

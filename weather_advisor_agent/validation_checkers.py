@@ -2,11 +2,13 @@ import json
 import logging
 from typing import AsyncGenerator
 
-from google.adk.agents import BaseAgent
+from google.genai.types import Content
+from google.adk.agents import BaseAgent, Agent
 from google.adk.agents.invocation_context import InvocationContext
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.events import Event, EventActions
 
-from weather_advisor_agent.utils.observability import observability
+from weather_advisor_agent.utils import observability
 
 logger = logging.getLogger(__name__)
 
@@ -108,21 +110,23 @@ class EnvRiskValidationChecker(BaseAgent):
 
 
 class EnvLocationGeoValidationChecker(BaseAgent):
-  async def _run_async_impl(self,context: InvocationContext) -> AsyncGenerator[Event, None]:
-    observability.log_agent_start("EnvLocationGeoValidationChecker",{"session_id": context.session.id})
+  async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]:
+    observability.log_agent_start("EnvLocationGeoValidationChecker", {"session_id": context.session.id})
     
     state = context.session.state
     locations = state.get("env_location_options")
+    validation_details = ""
     
     if not locations:
-      logger.info("No location options found, skipping validation")
-
-      observability.log_validation("EnvLocationGeoValidationChecker",passed=True,details=validation_details)
+      logger.info("No location options found - passing through to allow upstream handling")
+      validation_details = "No locations to validate - empty list"
+      observability.log_validation("EnvLocationGeoValidationChecker", passed=True, details=validation_details)
       
       yield Event(author=self.name, actions=EventActions(escalate=True))
       return
     
     if not isinstance(locations, list):
+      logger.warning(f"Locations is not a list (type: {type(locations).__name__}), converting to empty list")
       locations = []
     
     cleaned = []
@@ -131,6 +135,7 @@ class EnvLocationGeoValidationChecker(BaseAgent):
     
     for loc in locations:
       if not isinstance(loc, dict):
+        logger.debug(f"Skipping non-dict location: {type(loc).__name__}")
         invalid_count += 1
         continue
       
@@ -155,10 +160,12 @@ class EnvLocationGeoValidationChecker(BaseAgent):
         logger.warning(f"Could not parse coordinates for {name}: {e}")
         invalid_count += 1
         continue
-      
+
       key = (round(lat_f, 4), round(lon_f, 4))
+
       if key in seen_coords:
         logger.debug(f"Duplicate coordinates detected for {name}, skipping")
+        invalid_count += 1
         continue
       seen_coords.add(key)
       
@@ -168,20 +175,57 @@ class EnvLocationGeoValidationChecker(BaseAgent):
         "longitude": lon_f,
         "country": loc.get("country"),
         "admin1": loc.get("admin1"),
+        "admin2": loc.get("admin2"),
         "activity": loc.get("activity"),
         "source": loc.get("source", "atlas+geocode")
       })
     
     state["env_location_options"] = cleaned
-    validation_details = (f"Cleaned location list: {len(cleaned)} valid, "f"{invalid_count} invalid/duplicate")
     
-    if cleaned:
-      logger.info(f"{validation_details}")
-    else:
-      logger.warning(f"{validation_details}-no valid locations")
+    validation_details = (f"Cleaned location list: {len(cleaned)} valid, {invalid_count} invalid/duplicate")
     
-    observability.log_validation("EnvLocationGeoValidationChecker",passed=len(cleaned) > 0,details=validation_details)
-    observability.log_state_change("env_location_options","UPDATE",f"{len(cleaned)} locations")
-    observability.log_agent_complete("EnvLocationGeoValidationChecker","env_location_options",success=True)
+    passed = len(cleaned) > 0
+
+    observability.log_validation("EnvLocationGeoValidationChecker", passed=passed, details=validation_details)
+    observability.log_agent_complete("EnvLocationGeoValidationChecker", "env_location_options", success=passed)
+
+    yield Event(author=self.name, actions=EventActions(escalate=passed))
+
+class ForceAuroraChecker(Agent):
+    """
+    Validation checker that forces Aurora to run if env_advice_markdown is missing.
+    This ensures Aurora is ALWAYS called after risk assessment.
+    """
     
-    yield Event(author=self.name, actions=EventActions(escalate=True))
+    def __init__(self, name: str = "force_aurora_checker"):
+        super().__init__(
+            name=name,
+            model="gemini-2.0-flash-exp",  # Lightweight model
+            description="Ensures Aurora is called after risk assessment",
+            instruction="""
+            You are a validation checker that ensures the pipeline is complete.
+            
+            Check the session state:
+            - If env_risk_report exists BUT env_advice_markdown is missing:
+              Return "FORCE_AURORA" to trigger Aurora
+            - Otherwise return "PASS"
+            
+            Be very brief. Just return one word: "FORCE_AURORA" or "PASS".
+            """,
+            after_agent_callback=self.force_aurora_callback
+        )
+    
+    @staticmethod
+    def force_aurora_callback(callback_context: CallbackContext) -> Content:
+        """Check if Aurora needs to be forced"""
+        state = callback_context.session.state
+        
+        has_risk = state.get("env_risk_report") is not None
+        has_advice = state.get("env_advice_markdown") is not None
+        
+        if has_risk and not has_advice:
+            # Force Aurora to run
+            callback_context.session.state["_force_aurora"] = True
+            print("⚠️  FORCING AURORA: Risk report exists but no advice markdown")
+        
+        return Content()
