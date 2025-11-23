@@ -6,12 +6,12 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 
-from weather_advisor_agent import envi_root_agent
+from weather_advisor_agent import Theophrastus_root_agent
 from weather_advisor_agent.utils import observability
 
 logging.basicConfig(level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-APP_NAME = "envi_test"
+APP_NAME = "Theophrastus_test"
 USER_ID = "test_user"
 SESSION_ID = "test_session"
 
@@ -28,7 +28,7 @@ async def test_data_fetching_with_observability():
   )
 
   runner = Runner(
-    agent=envi_root_agent,
+    agent=Theophrastus_root_agent,
     app_name=APP_NAME,
     session_service=session_service
   )
@@ -136,7 +136,7 @@ async def test_multiple_locations():
     )
     
     runner = Runner(
-      agent=envi_root_agent,
+      agent=Theophrastus_root_agent,
       app_name=APP_NAME,
       session_service=session_service
     )
@@ -160,7 +160,7 @@ async def test_multiple_locations():
 
 async def main():
     """Main test runner"""
-    print("ENVI OBSERVABILITY TEST")
+    print("Theophrastus OBSERVABILITY TEST")
     print("-Logging, Tracing & Metrics-")
        
     try:

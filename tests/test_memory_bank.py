@@ -142,7 +142,7 @@ def test_persistence():
   print(f" -Users: {', '.join(summary['users'])}")
   print(f" -Most Queried: {', '.join(summary['most_queried_locations'])}")
   
-  storage_path = Path("TESTS/envi_memory_bank_test.json")
+  storage_path = Path("TESTS/Theophrastus_memory_bank_test.json")
   if storage_path.exists():
     size_kb = storage_path.stat().st_size / 1024
     print(f"\n[TEST] Memory persisted to disk:")
@@ -153,7 +153,7 @@ def test_persistence():
 
 
 def main():
-  print("\nENVI MEMORY TEST")
+  print("\nTheophrastus MEMORY TEST")
   try:
     test_user_preferences()
     test_query_history()

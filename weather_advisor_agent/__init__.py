@@ -1,3 +1,3 @@
-from .envi_root_agent import envi_root_agent
+from .Theophrastus_root_agent import Theophrastus_root_agent
 
-__all__ = ["envi_root_agent"]
+__all__ = ["Theophrastus_root_agent"]

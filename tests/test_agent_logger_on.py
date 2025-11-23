@@ -6,12 +6,12 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 
-from weather_advisor_agent import envi_root_agent
+from weather_advisor_agent import Theophrastus_root_agent
 from weather_advisor_agent.utils import observability
 
-APP_NAME = "envi_app"
+APP_NAME = "Theophrastus_app"
 USER_ID = "test_user"
-SESSION_ID = "test_envi"
+SESSION_ID = "test_Theophrastus"
 
 def _looks_like_env_snapshot_json(text: str) -> bool:
   if not text:
@@ -34,7 +34,7 @@ async def main():
     session_id=SESSION_ID
   )
   runner = Runner(
-    agent=envi_root_agent,
+    agent=Theophrastus_root_agent,
     app_name=APP_NAME,
     session_service=session_service
   )
@@ -44,7 +44,7 @@ async def main():
     "I want to go hiking this weekend near Mexico City. What are some good locations?",
     "What is the weather like in those locations?",
     "Generate a recommendations report.",
-    "Save it to reports/weather_advisor_agent/Envi_recomendations.md"
+    "Save it to reports/weather_advisor_agent/Theophrastus_recomendations.md"
   ]
 
   logging.getLogger("google_genai.types").setLevel(logging.ERROR)
@@ -77,7 +77,7 @@ async def main():
 
           last_user_facing_text = text
 
-    print("=== ENVI RESPONSE ===")
+    print("=== Theophrastus RESPONSE ===")
     if last_user_facing_text:
         print(f"{last_user_facing_text}\n")
     else:

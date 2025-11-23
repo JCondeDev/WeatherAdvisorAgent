@@ -49,7 +49,7 @@ class TraceSpan:
       }
 
 
-class EnviMetrics:
+class TheophrastusMetrics:
   def __init__(self):
     self.start_time = datetime.now()
     
@@ -137,10 +137,10 @@ class EnviMetrics:
       for error, count in sorted(summary['error_breakdown'].items()):
         print(f"{error}: {count}")
 
-class EnviObservability:   
+class TheophrastusObservability:   
     def __init__(self, enable_traces: bool = True):
-      self.logger = logging.getLogger("envi")
-      self.metrics = EnviMetrics()
+      self.logger = logging.getLogger("Theophrastus")
+      self.metrics = TheophrastusMetrics()
       self.enable_traces = enable_traces
       self.traces: List[TraceSpan] = []
       self.active_spans: Dict[str, TraceSpan] = {}
@@ -271,7 +271,7 @@ class EnviObservability:
         json.dump(self.metrics.get_summary(), f, indent=2)
         
 
-observability = EnviObservability(enable_traces=True)
+observability = TheophrastusObservability(enable_traces=True)
 
 def trace_function(operation_name: Optional[str] = None):
   def decorator(func):

@@ -1,3 +1,3 @@
-from .evaluator import EnviEvaluator
+from .evaluator import TheophrastusEvaluator
 
-__all__ = ["EnviEvaluator"]
+__all__ = ["TheophrastusEvaluator"]

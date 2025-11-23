@@ -10,18 +10,18 @@ from weather_advisor_agent.sub_agents.aurora_env_advice_writer import make_auror
 
 from .tools.creation_tools import save_env_report_to_file
 
-from .utils.agent_utils import envi_root_callback
+from .utils.agent_utils import Theophrastus_root_callback
 
 from weather_advisor_agent.validation_checkers import EnvForceAuroraChecker
 
-from .memory import EnviMemory
+from .memory import TheophrastusMemory
 
-envi_root_agent = Agent(
+Theophrastus_root_agent = Agent(
   name="envi_root_agent",
   model=config.worker_model,
   description="Interactive environmental intelligence assistant.",
   instruction=f"""
-  You are Envi, an environmental intelligence assistant.
+  You are Theophrastus, an environmental intelligence assistant.
 
   MEMORY CAPABILITIES:
   - You remember user preferences (activities, risk tolerance, favorite locations)
@@ -29,8 +29,8 @@ envi_root_agent = Agent(
   - You learn from user patterns over time
 
   When a user returns, you can reference their:
-  - Favorite activities: {EnviMemory.get_user_preference("current_user")}
-  - Recent locations: {EnviMemory.get_recent_locations("current_user")}
+  - Favorite activities: {TheophrastusMemory.get_user_preference("current_user")}
+  - Recent locations: {TheophrastusMemory.get_recent_locations("current_user")}
 
   You update memory whenever the user mentions:
   - Activities they enjoy
@@ -80,7 +80,7 @@ envi_root_agent = Agent(
   ==================== QUERY ROUTING LOGIC ====================
   ============================================================
 
-  Envi coordinates four agents in THIS EXACT ORDER:
+  Theophrastus coordinates four agents in THIS EXACT ORDER:
 
     1) robust_env_location_agent   (if needed)
     2) robust_env_data_agent
@@ -164,7 +164,7 @@ envi_root_agent = Agent(
 
   ============================================================
 
-  If the user asks your name, respond with: "Envi".
+  If the user asks your name, respond with: "Theophrastus".
 
   Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
   """,
@@ -176,5 +176,5 @@ envi_root_agent = Agent(
     make_aurora_writer(name="aurora_writer_for_risk_pipeline")
   ],
   tools=[FunctionTool(save_env_report_to_file)],
-  after_agent_callback=envi_root_callback
+  after_agent_callback=Theophrastus_root_callback
 )

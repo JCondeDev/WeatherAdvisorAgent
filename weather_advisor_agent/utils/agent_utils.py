@@ -242,7 +242,7 @@ def format_weather_summary(snapshot: any) -> str:
     return "\n".join(lines)
   return "Null data.\n"
 
-def envi_root_callback(*args, **kwargs):
+def Theophrastus_root_callback(*args, **kwargs):
 
     ctx = kwargs.get("callback_context")
     if ctx is None and len(args) >= 2:

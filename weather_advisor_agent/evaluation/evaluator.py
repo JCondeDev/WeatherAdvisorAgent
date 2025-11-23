@@ -13,7 +13,7 @@ class EvaluationResult:
     details: str
     passed: bool
 
-class EnviEvaluator:
+class TheophrastusEvaluator:
     """Evaluates the quality of agent outputs."""
     def __init__(self):
       self.evaluation_history: List[Dict[str, Any]] = []
@@ -82,7 +82,7 @@ class EnviEvaluator:
         )
       
       required_sections = [
-        "# Envi Weather & Activity Report",
+        "# Theophrastus Weather & Activity Report",
         "## 1. Summary",
         "## 2. Conditions",
         "## 3. Recommendations"

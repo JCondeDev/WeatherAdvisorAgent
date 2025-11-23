@@ -1,4 +1,4 @@
-# Envi Weather & Activity Report — 2025-11-22 — Mexico City
+# Theophrastus Weather & Activity Report — 2025-11-22 — Mexico City
 
 ## 1. Summary
 

@@ -3,16 +3,16 @@
     "total_traces": 5,
     "successful": 5,
     "failed": 0,
-    "avg_duration_ms": 35925.74973106384,
-    "max_duration_ms": 117881.65020942688,
-    "min_duration_ms": 12378.217220306396,
+    "avg_duration_ms": 17282.998037338257,
+    "max_duration_ms": 46028.003215789795,
+    "min_duration_ms": 3700.72078704834,
     "traces": [
       {
-        "span_id": "user_query_1_1763876599910",
+        "span_id": "user_query_1_1763881245797",
         "name": "user_query_1",
-        "start_time": 1763876599.910198,
-        "end_time": 1763876615.035687,
-        "duration_ms": 15125.488996505737,
+        "start_time": 1763881245.7972672,
+        "end_time": 1763881263.450929,
+        "duration_ms": 17653.661727905273,
         "status": "success",
         "attributes": {
           "query": "How is the weather in my city Sacramento, Californ"
@@ -20,11 +20,11 @@
         "parent_span_id": null
       },
       {
-        "span_id": "user_query_2_1763876615037",
+        "span_id": "user_query_2_1763881263451",
         "name": "user_query_2",
-        "start_time": 1763876615.0371957,
-        "end_time": 1763876627.415413,
-        "duration_ms": 12378.217220306396,
+        "start_time": 1763881263.4519265,
+        "end_time": 1763881274.936466,
+        "duration_ms": 11484.53950881958,
         "status": "success",
         "attributes": {
           "query": "I want to go hiking this weekend near Mexico City."
@@ -32,11 +32,11 @@
         "parent_span_id": null
       },
       {
-        "span_id": "user_query_3_1763876627416",
+        "span_id": "user_query_3_1763881274937",
         "name": "user_query_3",
-        "start_time": 1763876627.416935,
-        "end_time": 1763876648.5861068,
-        "duration_ms": 21169.171810150146,
+        "start_time": 1763881274.9374628,
+        "end_time": 1763881278.6381836,
+        "duration_ms": 3700.72078704834,
         "status": "success",
         "attributes": {
           "query": "What is the weather like in those locations?"
@@ -44,11 +44,11 @@
         "parent_span_id": null
       },
       {
-        "span_id": "user_query_4_1763876648593",
+        "span_id": "user_query_4_1763881278639",
         "name": "user_query_4",
-        "start_time": 1763876648.5930898,
-        "end_time": 1763876766.47474,
-        "duration_ms": 117881.65020942688,
+        "start_time": 1763881278.639202,
+        "end_time": 1763881324.6672053,
+        "duration_ms": 46028.003215789795,
         "status": "success",
         "attributes": {
           "query": "Generate a recommendations report."
@@ -56,14 +56,14 @@
         "parent_span_id": null
       },
       {
-        "span_id": "user_query_5_1763876766481",
+        "span_id": "user_query_5_1763881324668",
         "name": "user_query_5",
-        "start_time": 1763876766.4817202,
-        "end_time": 1763876779.5559406,
-        "duration_ms": 13074.220418930054,
+        "start_time": 1763881324.6683185,
+        "end_time": 1763881332.2163835,
+        "duration_ms": 7548.064947128296,
         "status": "success",
         "attributes": {
-          "query": "Save it to reports/weather_advisor_agent/Envi_reco"
+          "query": "Save it to reports/weather_advisor_agent/Theophras"
         },
         "parent_span_id": null
       }
@@ -71,11 +71,11 @@
   },
   "all_traces": [
     {
-      "span_id": "user_query_1_1763876599910",
+      "span_id": "user_query_1_1763881245797",
       "name": "user_query_1",
-      "start_time": 1763876599.910198,
-      "end_time": 1763876615.035687,
-      "duration_ms": 15125.488996505737,
+      "start_time": 1763881245.7972672,
+      "end_time": 1763881263.450929,
+      "duration_ms": 17653.661727905273,
       "status": "success",
       "attributes": {
         "query": "How is the weather in my city Sacramento, Californ"
@@ -83,11 +83,11 @@
       "parent_span_id": null
     },
     {
-      "span_id": "user_query_2_1763876615037",
+      "span_id": "user_query_2_1763881263451",
       "name": "user_query_2",
-      "start_time": 1763876615.0371957,
-      "end_time": 1763876627.415413,
-      "duration_ms": 12378.217220306396,
+      "start_time": 1763881263.4519265,
+      "end_time": 1763881274.936466,
+      "duration_ms": 11484.53950881958,
       "status": "success",
       "attributes": {
         "query": "I want to go hiking this weekend near Mexico City."
@@ -95,11 +95,11 @@
       "parent_span_id": null
     },
     {
-      "span_id": "user_query_3_1763876627416",
+      "span_id": "user_query_3_1763881274937",
       "name": "user_query_3",
-      "start_time": 1763876627.416935,
-      "end_time": 1763876648.5861068,
-      "duration_ms": 21169.171810150146,
+      "start_time": 1763881274.9374628,
+      "end_time": 1763881278.6381836,
+      "duration_ms": 3700.72078704834,
       "status": "success",
       "attributes": {
         "query": "What is the weather like in those locations?"
@@ -107,11 +107,11 @@
       "parent_span_id": null
     },
     {
-      "span_id": "user_query_4_1763876648593",
+      "span_id": "user_query_4_1763881278639",
       "name": "user_query_4",
-      "start_time": 1763876648.5930898,
-      "end_time": 1763876766.47474,
-      "duration_ms": 117881.65020942688,
+      "start_time": 1763881278.639202,
+      "end_time": 1763881324.6672053,
+      "duration_ms": 46028.003215789795,
       "status": "success",
       "attributes": {
         "query": "Generate a recommendations report."
@@ -119,14 +119,14 @@
       "parent_span_id": null
     },
     {
-      "span_id": "user_query_5_1763876766481",
+      "span_id": "user_query_5_1763881324668",
       "name": "user_query_5",
-      "start_time": 1763876766.4817202,
-      "end_time": 1763876779.5559406,
-      "duration_ms": 13074.220418930054,
+      "start_time": 1763881324.6683185,
+      "end_time": 1763881332.2163835,
+      "duration_ms": 7548.064947128296,
       "status": "success",
       "attributes": {
-        "query": "Save it to reports/weather_advisor_agent/Envi_reco"
+        "query": "Save it to reports/weather_advisor_agent/Theophras"
       },
       "parent_span_id": null
     }

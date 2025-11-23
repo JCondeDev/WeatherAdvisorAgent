@@ -42,8 +42,8 @@ class LocationMemory:
   notes: str = ""
 
 
-class EnviMemoryBank:
-  """Persistent memory storage for Envi agent system."""
+class TheophrastusMemoryBank:
+  """Persistent memory storage for Theophrastus agent system."""
   def __init__(self, storage_path: Optional[str] = None):
     """Initialize Memory Bank"""
     self.storage_path = storage_path
@@ -54,7 +54,7 @@ class EnviMemoryBank:
     if storage_path:
       self._load_from_disk()
     
-    logger.info(f"EnviMemoryBank initialized (storage: {storage_path or 'memory-only'})")
+    logger.info(f"TheophrastusMemoryBank initialized (storage: {storage_path or 'memory-only'})")
   
   def store_user_preference(
     self,
@@ -266,4 +266,4 @@ class EnviMemoryBank:
       ]
     }
 
-EnviMemory = EnviMemoryBank(storage_path="data/weather_advisor_agent/envi_memory.json")
+TheophrastusMemory = TheophrastusMemoryBank(storage_path="data/weather_advisor_agent/Theophrastus_memory.json")

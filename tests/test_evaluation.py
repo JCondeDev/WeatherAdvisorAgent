@@ -4,7 +4,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
 
-from weather_advisor_agent.evaluation import EnviEvaluator
+from weather_advisor_agent.evaluation import TheophrastusEvaluator
 from weather_advisor_agent.sub_agents import (
   robust_env_data_agent,
   robust_env_risk_agent,
@@ -12,18 +12,18 @@ from weather_advisor_agent.sub_agents import (
 )
 
 async def run_evaluation_test():
-  print("ENVI AGENT EVALUATION TEST")
+  print("Theophrastus AGENT EVALUATION TEST")
   
   session_service = InMemorySessionService()
   await session_service.create_session(
-    app_name="envi_test",
+    app_name="Theophrastus_test",
     user_id="test_user",
     session_id="test_session"
   )
   
   data_runner = Runner(
     agent=robust_env_data_agent,
-    app_name="envi_eval",
+    app_name="Theophrastus_eval",
     session_service=session_service
   )
   
@@ -38,13 +38,13 @@ async def run_evaluation_test():
     pass
   
   session = await session_service.get_session(
-    app_name="envi_eval",
+    app_name="Theophrastus_eval",
     user_id="eval_user",
     session_id="eval_session"
   )
   
   env_snapshot = session.state.get("env_snapshot")
-  eval_result = EnviEvaluator.run_full_evaluation(env_snapshot=env_snapshot,env_risk_report={},advice_markdown="")
+  eval_result = TheophrastusEvaluator.run_full_evaluation(env_snapshot=env_snapshot,env_risk_report={},advice_markdown="")
   
   print("[TEST] EVALUATION RESULTS:")
   print(f" -Overall Score: {eval_result['overall_score']:.2%}")

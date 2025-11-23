@@ -1,14 +1,14 @@
-from .memory_bank import (EnviMemoryBank,
+from .memory_bank import (TheophrastusMemoryBank,
   UserPreference,
   QueryHistory,
   LocationMemory,
-  EnviMemory
+  TheophrastusMemory
 )
 
 __all__ = [
-  "EnviMemoryBank",
+  "TheophrastusMemoryBank",
   "UserPreference",
   "QueryHistory",
   "LocationMemory",
-  "EnviMemory"
+  "TheophrastusMemory"
 ]

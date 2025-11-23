@@ -7,7 +7,7 @@ from google.genai import types as genai_types
 
 from weather_advisor_agent.sub_agents import aurora_env_advice_writer
 
-APP_NAME = "envi_app"
+APP_NAME = "Theophrastus_app"
 USER_ID = "test_user"
 SESSION_ID = "test_aurora_debug"
 
