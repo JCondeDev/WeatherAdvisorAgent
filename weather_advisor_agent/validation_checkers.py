@@ -14,55 +14,64 @@ logger = logging.getLogger(__name__)
 
 
 class EnvSnapshotValidationChecker(BaseAgent):
-  async def _run_async_impl(self,context: InvocationContext) -> AsyncGenerator[Event, None]:
-    observability.log_agent_start("EnvSnapshotValidationChecker",{"session_id": context.session.id})
+  async def _run_async_impl(self, context: InvocationContext) -> AsyncGenerator[Event, None]:
+    observability.log_agent_start("EnvSnapshotValidationChecker", {"session_id": context.session.id})
     snapshot = context.session.state.get("env_snapshot")
     
+    # CRITICAL FIX: Parse JSON string if needed
+    if isinstance(snapshot, str):
+        try:
+            snapshot = json.loads(snapshot)
+            logger.debug("Parsed env_snapshot from JSON string")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse env_snapshot JSON: {e}")
+            snapshot = None
+    
     def is_valid_snapshot(snap: dict) -> bool:
-      if not isinstance(snap, dict):
-        return False
-      
-      current = snap.get("current") or {}
-
-      if not isinstance(current, dict):
-        return False
-      
-      temp = current.get("temperature_c")
-      feels_like = current.get("apparent_temperature_c")
-      wind = current.get("wind_speed_10m_ms")
-      humidity = current.get("relative_humidity_percent")
-      
-      has_data = any(v is not None for v in (temp, feels_like, wind, humidity))
-      
-      if has_data:
-        logger.debug(f"Valid snapshot: temp={temp}, feels={feels_like}, "f"wind={wind}, humidity={humidity}")
-      
-      return has_data
+        if not isinstance(snap, dict):
+            return False
+        
+        current = snap.get("current") or {}
+        if not isinstance(current, dict):
+            return False
+        
+        temp = current.get("temperature_c")
+        feels_like = current.get("apparent_temperature_c")
+        wind = current.get("wind_speed_10m_ms")
+        humidity = current.get("relative_humidity_percent")
+        
+        has_data = any(v is not None for v in (temp, feels_like, wind, humidity))
+        
+        if has_data:
+            logger.debug(f"Valid snapshot: temp={temp}, feels={feels_like}, wind={wind}, humidity={humidity}")
+        
+        return has_data
     
     is_valid = False
     validation_details = ""
     
     if isinstance(snapshot, dict):
-      is_valid = is_valid_snapshot(snapshot)
-      if is_valid:
-        logger.info("Single location snapshot is valid")
-      else:
-        logger.warning("Single location snapshot is invalid or incomplete")
+        is_valid = is_valid_snapshot(snapshot)
+        if is_valid:
+            logger.info("Single location snapshot is valid")
+        else:
+            logger.warning("Single location snapshot is invalid or incomplete")
     elif isinstance(snapshot, list):
-      if not snapshot:
-        logger.warning("Empty snapshot list")
-      else:
-        valid_snapshots = [s for s in snapshot if isinstance(s, dict) and is_valid_snapshot(s)]
-        valid_count = len(valid_snapshots)
-        total_count = len(snapshot)
-        logger.info(f"{valid_count}/{total_count} snapshots valid")
+        if not snapshot:
+            logger.warning("Empty snapshot list")
+        else:
+            valid_snapshots = [s for s in snapshot if isinstance(s, dict) and is_valid_snapshot(s)]
+            valid_count = len(valid_snapshots)
+            total_count = len(snapshot)
+            is_valid = valid_count > 0
+            logger.info(f"{valid_count}/{total_count} snapshots valid")
     else:
-      logger.error(f"Unexpected snapshot type: {type(snapshot).__name__}")
+        logger.error(f"Unexpected snapshot type after parsing: {type(snapshot).__name__}")
     
-    observability.log_validation("EnvSnapshotValidationChecker",passed=is_valid,details=validation_details)
-    observability.log_agent_complete("EnvSnapshotValidationChecker","env_snapshot",success=is_valid)
+    observability.log_validation("EnvSnapshotValidationChecker", passed=is_valid, details=validation_details)
+    observability.log_agent_complete("EnvSnapshotValidationChecker", "env_snapshot", success=is_valid)
     
-    yield Event(author=self.name,actions=EventActions(escalate=is_valid))
+    yield Event(author=self.name, actions=EventActions(escalate=is_valid))
 
 
 class EnvRiskValidationChecker(BaseAgent):

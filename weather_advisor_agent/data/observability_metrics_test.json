@@ -1,24 +1,25 @@
 {
-  "runtime_seconds": 86.48,
-  "total_agent_invocations": 5,
-  "total_tool_calls": 2,
-  "successful_operations": 6,
-  "failed_operations": 4,
-  "success_rate_percent": 60.0,
-  "validation_checks": 5,
+  "runtime_seconds": 121.14,
+  "total_agent_invocations": 6,
+  "total_tool_calls": 10,
+  "successful_operations": 11,
+  "failed_operations": 2,
+  "success_rate_percent": 84.62,
+  "validation_checks": 6,
   "validation_failures": 2,
   "agent_call_breakdown": {
-    "EnvSnapshotValidationChecker": 3,
+    "EnvSnapshotValidationChecker": 2,
+    "EnvLocationGeoValidationChecker": 2,
     "EnvRiskValidationChecker": 2
   },
   "tool_call_breakdown": {
     "geocode_place_name": 1,
-    "fetch_env_snapshot_from_open_meteo": 1
+    "fetch_env_snapshot_from_open_meteo": 9
   },
   "error_breakdown": {},
   "avg_agent_durations_ms": {},
   "avg_tool_durations_ms": {
-    "geocode_place_name": 2863.9159202575684,
-    "fetch_env_snapshot_from_open_meteo": 1470.5941677093506
+    "geocode_place_name": 2584.228277206421,
+    "fetch_env_snapshot_from_open_meteo": 1242.5156169467502
   }
 }

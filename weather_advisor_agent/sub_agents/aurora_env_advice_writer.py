@@ -1,8 +1,43 @@
+import json
+import logging
+
 from weather_advisor_agent.config import config
 
 from google.adk.agents import Agent
 
 from weather_advisor_agent.utils import observability
+
+from weather_advisor_agent.utils import session_cache
+
+from google.genai.types import Content, Part
+from google.adk.agents.callback_context import CallbackContext
+
+logger = logging.getLogger(__name__)
+
+# Replace your existing aurora callback function:
+def aurora_callback_from_global(callback_context: CallbackContext) -> Content:
+  """
+  Callback for aurora advice writer - stores final markdown report
+  """
+  advice = callback_context.session.state.get("env_advice_markdown")
+  
+  if advice:
+      # Already in state, also store in global cache
+      session_cache.store_evaluation_data(
+          callback_context.session.id,
+          {"env_advice_markdown": advice}
+      )
+      
+      observability.log_agent_complete("aurora_env_advice_writer", "env_advice_markdown", success=True)
+      logger.info("Advice report generated.")
+      
+      # Return the advice as content to display to user
+      return Content(parts=[Part(text=advice)])
+  else:
+      logger.warning("No advice markdown generated.")
+      observability.log_agent_complete("aurora_env_advice_writer", "env_advice_markdown", success=False)
+      return Content(parts=[Part(text="Unable to generate recommendations.")])
+
 
 def make_aurora_writer(name="aurora_env_advice_writer"):
   return Agent(
