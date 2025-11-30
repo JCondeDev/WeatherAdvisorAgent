@@ -1,6 +1,6 @@
-from .observability import Theophrastus_Observability
+from .local_observability import Theophrastus_Observability
 
-from .evaluator import TheophrastusEvaluator
+from .local_evaluator import TheophrastusEvaluator
 
 from . import session_cache
 

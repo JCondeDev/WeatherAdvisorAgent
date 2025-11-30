@@ -6,9 +6,9 @@
 
 Theophrastus is a multi-agent system that provides comprehensive environmental weather analysis and outdoor activity recommendations. Named after Theophrastus of Eresos-the ancient Greek philosopher known as the "Father of Botany," successor to Aristotle, and pioneer of meteorology. This intelligent agent combines real-time meteorological data with advanced risk assessment to help users make informed decisions about outdoor activities and agricultural planning.
 
-In this system, Theophrastus serves as the central orchestrator, a prophet-philosopher who communes with a divine council of elemental deities to interpret weather patterns and provide sage counsel. Zephyr brings wind and weather data, Atlas maps the terrain, Aether assesses atmospheric dangers, Aurora illuminates the path forward with clear guidance and Phosphoros ensures the dawn of wisdom always arrives. Through this divine communion, Theophrastus interprets celestial signs and atmospheric omens, transforming raw environmental data into actionable wisdom.
+In this system, Theophrastus serves as the central orchestrator, a prophet-philosopher who communes with a divine council of elemental deities to interpret weather patterns and provide sage counsel. Zephyr brings wind and weather data, Atlas maps the terrain, Aether assesses atmospheric dangers, Aurora illuminates the path forward with clear guidance. Through this divine communion, Theophrastus interprets celestial signs and atmospheric omens, transforming raw environmental data into actionable wisdom.
 
-True to his historical namesake who authored foundational works on plant classification, meteorology, and the intricate relationships between flora and their environment, Theophrastus offers guidance not only for outdoor recreation but for agricultural endeavors—advising on optimal planting and harvest timing and the delicate balance between humanity's needs and nature's rhythms. Like the ancient philosopher who studied how plants respond to seasons and weather, this agent bridges the gap between environmental science and practical wisdom, helping farmers and outdoor enthusiasts work in harmony with the natural world. 
+Like the ancient philosopher who studied how plants respond to seasons and weather, this agent bridges the gap between environmental science and practical wisdom, helping farmers and outdoor enthusiasts work in harmony with the natural world. 
 
 ## Problem Statement
 
@@ -27,22 +27,8 @@ Users need a system that not only fetches environmental data but intelligently i
 - Location Discovery: Finds optimal locations based on activity types.
 - Risk Assessment: Analyzes environmental hazards.
 - Reports: Generates recommendations.
-- Quality Assurance: Built-in validation and evaluation.
-- Monitoring: Observability with metrics and traces.
-
-### Functionality Example
-
-```
-USER: "I want to go hiking near Mexico City this weekend"
-
-Theophrastus WorkFlow:
- *FIRST: Searches for hiking locations.
- *THEN: Fetches weather for each location.
- *THEN: Assesses environmental risks.
- *FINALLY: Generates personalized recommendations.
-
-RESULT: Complete hiking guide with safety analysis and location comparisons!
-```
+- Quality Assurance: Built-in local evaluation tests.
+- Monitoring: Built-in observability with metrics and traces.
 
 ## Use Cases
 
@@ -58,7 +44,6 @@ RESULT: Complete hiking guide with safety analysis and location comparisons!
 
 ### Professional Applications:
 - Construction planning.
-- Agricultural scheduling.
 - Field activities.
 
 ### Travel Planning:
@@ -69,9 +54,48 @@ RESULT: Complete hiking guide with safety analysis and location comparisons!
 
 Theophrastus employs a **multi-agent orchestration system** where agents and tools collaborate:
 
-![Architecture](./TheoprhastusArchitecture.png "Theophrastus_Architecture")
+![Architecture](./TheophrastusArchitecture_0.png "Theophrastus_Architecture")
 
-### The Sub Agents
+---
+
+## Project Structure
+
+```
+Enviro_agent/
+    - reports/
+    - test/
+        - test_agent.py                     #Test all agent functionalities in console
+
+    - weather_advisor_agent/
+        - config/
+            -main_config.py                 # Agent configuration
+
+        - data/
+
+        - sub_agents/
+            - zephyr_env_data_agent.py      # Weather data collection
+            - atlas_env_location_agent.py   # Location discovery
+            - aether_env_risk_agent.py      # Risk assessment
+            - aurora_env_advice_writer.py   # Advice generation
+
+        - tools/
+            - web_access_tools.py           # API integrations
+            - creation_tools.py             # File utilities
+            - memory_tools.py               # Memory implementation tools
+
+        - utils/
+            - local_observability.py        # Logging & metrics
+            - local_evaluator.py            # Verify agent functionality and validation
+            - session_cache.py              # Mantain keys permanence
+            - validation_checkers.py        # Quality validation
+
+        - agent.py                          # Main orchestrator
+    - .env                                  # env config
+    - requirements.txt                      # Dependencies
+    - README.md                             # This file
+```
+
+### The Sub-Agents
 
 #### Zephyr (Data Agent)
 - Fetches weather data from Open-Meteo API.
@@ -80,12 +104,16 @@ Theophrastus employs a **multi-agent orchestration system** where agents and too
 
 _Named after Zephyros, Greek god of the west wind—the gentle spring breeze that brings favorable weather and seasonal change._
 
+---
+
 #### Atlas (Location Agent)  
 - Discovers locations based on activity.
 - Geocodes and validates coordinates.
 - Enriches with geographic metadata.
 
 _Named after the Titan Atlas, condemned to hold up the celestial spheres—now known as the bearer of maps and geographic knowledge._
+
+---
 
 #### Aether (Risk Agent)
 - Assesses temperature extremes.
@@ -94,6 +122,8 @@ _Named after the Titan Atlas, condemned to hold up the celestial spheres—now k
 
 _Named after Aether, primordial deity of the upper air—the pure, bright atmosphere the gods breathe, distinct from the mortal air below._
 
+---
+
 #### Aurora (Advice Writer)
 - Synthesizes all gathered data.
 - Generates professional markdown reports.
@@ -101,12 +131,110 @@ _Named after Aether, primordial deity of the upper air—the pure, bright atmosp
 
 _Named after Aurora (Eos in Greek), goddess of dawn—who brings light and clarity each morning, illuminating the path forward._
 
-### Phosphoros (Aurora Herald)
-- Monitors workflow state after risk assessment completion.
-- Enforces Aurora execution when risk data exists without advice.
-- Prevents workflow short-circuits by ensuring complete recommendations.
+---
 
-_Named after the Greek god who heralds Aurora's arrival as the morning star._
+### The Tools
+
+#### Web Access Tools
+**Purpose:** Connect to external APIs for geocoding and weather data.
+
+**API: Open-Meteo Weather** 
+- Endpoint: `https://api.open-meteo.com/v1/forecast`.
+- Authentication: No requierements (free tier).
+- Data: Temperature, wind, humidity, precipitation.
+- Coverage: Global.
+- Resolution: Hourly forecasts.
+
+---
+
+**`geocode_place_name`**
+- Converts location names to coordinates using Open-Meteo Geocoding API.
+- Smart suffix removal (National Park, Mountain, Trail, etc.).
+- Fuzzy matching with multiple candidate variations.
+- Region-aware search with optional hints.
+
+**`fetch_env_snapshot_from_open_meteo`**
+- Retrieves comprehensive environmental data from Open-Meteo API.
+- Fetches current temperature, humidity, wind speed, air quality.
+- Validates coordinate bounds and handles timeouts gracefully.
+- Returns structured snapshot with current and hourly data.
+
+---
+
+#### Memory Tools
+**Purpose:** Enable cross-session learning and personalization.
+
+**Preference Management:**
+- `store_user_preference` - Remember user preferences (activity types, risk tolerance).
+- `get_user_preferences` - Retrieve all stored preferences.
+
+**Query History:**
+- `add_to_query_history` - Track locations queried (keeps last 20).
+- `get_query_history` - Retrieve recent query history.
+- `search_query_history` - Search history by keyword.
+
+**Favorite Locations:**
+- `store_favorite_location` - Save favorite places with notes.
+- `get_favorite_locations` - List all favorites.
+- `remove_favorite_location` - Remove from favorites.
+
+---
+
+#### File Management Tools
+**Purpose:** Persist reports and recommendations to disk.
+
+**`save_env_report_to_file`**
+- Saves generated markdown reports with timestamps.
+- Automatic directory creation.
+- UTF-8 encoding for international characters.
+- Returns confirmation with full file path.
+
+## Features in Detail
+
+### 1. Multi-Location Analysis
+Compare weather across multiple locations to find the best option:
+```
+User: "Compare hiking conditions in these three locations"
+- Fetches data for all locations
+- Assesses risks individually  
+```
+
+### 2. Risk-Based Recommendations
+Recommendations based on risks:
+- Heat Risk.
+- Cold Risk.
+- Wind Risk.
+- Overall Risk.
+
+### 3. Professional Reports
+Structured markdown output with:
+- Executive summary
+- Current conditions
+- Detailed recommendations
+- Risk assessment
+
+### 4. Quality Assurance
+
+Local validation:
+- Data completeness checks
+- Coordinate validation
+- Risk report structure
+- Advice quality assessment
+
+Local evaluation:
+- Quality categories
+- Automated scoring
+- Performance monitoring
+- JSON export for analysis
+
+### 5. Observability
+
+Full instrumentation with:
+- Structured logging
+- Performance metrics
+- Operation tracing
+- Error tracking
+- JSON exports
 
 ## Quick Start
 
@@ -127,20 +255,20 @@ pip install -r requirements.txt
 # 4. Configure environment
 cp .env.example .env
 # Edit .env and add your GOOGLE_API_KEY
+# RECOMMENDATION: Disable VertexAI as GOOGLE_GENAI_USE_VERTEXAI=FALSE
 ```
 
 ### Running Theophrastus
 
 - Option 1: ADK Web Interface (Recommended)
-```bash
-adk web
-# Navigate to `http://localhost:8000`
+```cmd
+adk web /agent/path
 ```
-
+Then navigate to `http://localhost:8000` in your favorite web browser.
 
 - Option 2: Python Script
-```bash
-python -m test.test_agent_logger_on
+```powershell
+python -m test.test_agent
 ```
 
 ### Usage Example
@@ -152,116 +280,12 @@ python -m test.test_agent_logger_on
 # Location discovery
 "Find good hiking spots near Mexico City"
 
-# Activity planning  
-"I want to go cycling this weekend. Where should I go?"
-
 # Full analysis
 "What's the weather like for hiking in those locations?"
+
+#Report generation
+"Based on locations, generate a final recommendations report."
 ```
-
-## Project Structure
-
-```
-weather_advisor_agent/
-    -sub_agents/
-        -zephyr_env_data_agent.py       # Weather data collection
-        -atlas_env_location_agent.py    # Location discovery
-        -aether_env_risk_agent.py       # Risk assessment
-        -aurora_env_advice_writer.py    # Advice generation
-    -tools/
-        -web_access_tools.py            # API integrations
-        -creation_tools.py              # File utilities
-        -func_tools.py                  # Helper functions
-    -utils/
-        -observability.py               # Logging & metrics
-        -agent_utils.py                 # Agent utilities
-    -evaluation/
-        -evaluator.py                   # Evaluation engine
-        -eval_integration.py            # Integration helpers
-        -README.md                      # Evaluation docs
-    -memory/
-        -memory_bank.py                 # Session memory
-    -data/
-        -envi_memory.json               # Memory bank
-    -evaluations/                       # Evaluation reports
-        -*.json                         # Metrics & traces
-    - test/
-        -test_agent_logger_on.py        # Integration tests
-        -test_agent_with_evaluation.py  # Evaluation tests
-    -Theophrastus_root_agent.py         # Main orchestrator
-    -validation_checkers.py             # Quality validation
-    -config.py                          # Configuration
-    -requirements.txt                   # Dependencies
-    -README.md                          # This file
-```
-
-## Features in Detail
-
-### 1. Multi-Location Analysis
-Compare weather across multiple locations to find the best option:
-```
-User: "Compare hiking conditions in these three locations"
-→ Fetches data for all locations
-→ Assesses risks individually  
-→ Recommends optimal choice
-```
-
-### 2. Risk-Based Recommendations
-Recommendations based on risks:
-- Heat Risk: Temperature and apparent temperature analysis
-- Cold Risk: Hypothermia and exposure evaluation
-- Wind Risk: Dangerous wind speed detection
-- Overall Risk: Composite safety rating
-
-### 3. Professional Reports
-Structured markdown output with:
-- Executive summary
-- Current conditions
-- Detailed recommendations
-- Risk assessment
-- Timing suggestions
-
-### 4. Quality Assurance
-
-Validation System:
-- Data completeness checks
-- Coordinate validation
-- Risk report structure
-- Advice quality assessment
-
-Evaluation System:
-- Quality categories
-- Automated scoring
-- Performance monitoring
-- JSON export for analysis
-
-### 5. Observability
-
-Full instrumentation with:
-- Structured logging
-- Performance metrics
-- Operation tracing
-- Error tracking
-- JSON exports
-
-## Testing
-
-### How To Run Integrated Tests
-```bash
-# Basic test
-python -m test.test_agent_logger_on
-
-# With evaluation
-python -m test.test_agent_with_evaluation
-```
-
-### Test Coverage
-- Data collection.
-- Location discovery.
-- Risk assessment.
-- Advice generation.
-- Validation system.
-- Evaluation metrics.
 
 ## Configuration
 
@@ -278,7 +302,7 @@ EVALUATION_ENABLED=true
 
 ### Model .config
 
-Edit `config.py` to customize models:
+Edit `config.py` to customize models based on your needs!
 ```python
 root_model = "gemini-2.5-flash"
 worker_model = "gemini-2.5-flash"
@@ -286,15 +310,6 @@ risk_model = "gemini-2.5-pro"
 mapper_model = "gemini-2.0-flash-lite"
 data_model = "gemini-2.0-flash-lite"
 ```
-
-## API Integration for Tools
-
-### Open-Meteo Weather API
-- Endpoint: `https://api.open-meteo.com/v1/forecast`.
-- Authentication: No requierements (free tier).
-- Data: Temperature, wind, humidity, precipitation.
-- Coverage: Global.
-- Resolution: Hourly forecasts.
 
 ## Troubleshooting
 
@@ -309,15 +324,27 @@ Solution: Check network connectivity and API rate limits.
 Issue: "Resource exhausted"  
 Solution: Check API quota for RPM(Responses Per Minute) and TPM(Tokens Per Minute).
 
+Issue: "No weather data"  
+Solution: Problems within OpenMeteo API, not the agent functionality. Wait a few minutes.
+
 ## Future Ideas To Integrate!
 
-### Version 2.0
-- [ ] Historical weather analysis.
-- [ ] Extended forecasts (7-14 days).
-
 ### Version 3.0
-- [ ] Multi-provider weather aggregation.
+- [ ] Improvements on local Evaluation, Observability and logging modules.
+- [ ] Historical weather analysis.
+- [ ] Database persitent memory.
+- [ ] Extended forecasts.
+- [ ] Aditional options for activity planning.
+- [ ] Better reports.
+
+### Version 4.0
+- [ ] Multi-provider weather aggregation to avoid no weather data issues.
 - [ ] Built-in machine learning models.
+- [ ] Satellite imagery analisys.
+- [ ] Agriculture and botanic options.
+
+### Version 5.0
+- [ ] Integration with hardware devices.
 
 ## License
 
@@ -325,7 +352,7 @@ Apache License - see [LICENSE](LICENSE) file for details.
 
 ## Contributions & Support!
 If you want to contribute for the development, thank you so much!
-So please:
+Follow the next steps please:
 
 1. Fork the repository
 2. Create a feature branch
@@ -334,3 +361,5 @@ So please:
 5. Submit a pull request
 
 If you find Theophrastus useful, please star the repository!
+
+ _Working with all kinds of engineering is fun!_

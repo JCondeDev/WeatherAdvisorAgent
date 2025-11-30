@@ -1,6 +1,5 @@
 import datetime
 from pathlib import Path
-from weather_advisor_agent.config import config 
 
 def save_env_report_to_file(report_markdown: str, filename: str) -> str:
   """Saves report to .md format"""

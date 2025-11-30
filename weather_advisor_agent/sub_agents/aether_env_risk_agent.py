@@ -3,11 +3,11 @@ import logging
 
 from google.adk.agents import Agent, LoopAgent
 
-from weather_advisor_agent.config import config
+from weather_advisor_agent.config import TheophrastusConfiguration
 
 from weather_advisor_agent.utils import Theophrastus_Observability, session_cache
 
-from weather_advisor_agent.validation_checkers import EnvRiskValidationChecker
+from weather_advisor_agent.utils.validation_checkers import EnvRiskValidationChecker
 
 from weather_advisor_agent.sub_agents.aurora_env_advice_writer import aurora_env_advice_writer
 
@@ -58,7 +58,7 @@ def aether_risk_callback(*args, **kwargs):
     return None
 
 aether_env_risk_agent = Agent(
-  model=config.critic_model,
+  model=TheophrastusConfiguration.critic_model,
   name="aether_env_risk_agent",
   description="Analyzes environmental data and produces a structured risk report.",
   instruction="""
