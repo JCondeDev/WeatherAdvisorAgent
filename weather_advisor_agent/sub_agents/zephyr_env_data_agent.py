@@ -6,13 +6,13 @@ from google.adk.tools import FunctionTool
 from google.adk.agents import Agent, LoopAgent
 from google.adk.agents.callback_context import CallbackContext
 
-from weather_advisor_agent.config import config
+from weather_advisor_agent.config import TheophrastusConfiguration
 
 from weather_advisor_agent.tools import (geocode_place_name,fetch_and_store_snapshot,get_last_snapshot)
 
 from weather_advisor_agent.utils import Theophrastus_Observability, session_cache
 
-from weather_advisor_agent.validation_checkers import EnvSnapshotValidationChecker
+from weather_advisor_agent.utils.validation_checkers import EnvSnapshotValidationChecker
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def zephyr_data_callback(callback_context: CallbackContext) -> Content:
     return Content(parts=[Part(text="No weather data available.")])
 
 zephyr_env_data_agent = Agent(
-  model=config.worker_model,
+  model=TheophrastusConfiguration.worker_model,
   name="zephyr_env_data_agent",
   description="Fetches live environmental data.",
   instruction="""

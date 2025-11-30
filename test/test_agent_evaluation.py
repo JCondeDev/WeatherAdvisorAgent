@@ -3,14 +3,20 @@ import logging
 import time
 from pathlib import Path
 
-from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
 from google.genai import types as genai_types
 
-from weather_advisor_agent import Theophrastus_root_agent
+from weather_advisor_agent.agent import root_agent
 from weather_advisor_agent.utils import Theophrastus_Observability
 from weather_advisor_agent.utils import TheophrastusEvaluator
 from weather_advisor_agent.utils import session_cache
+
+DATA_DIR = Path("weather_advisor_agent/data")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+db_url = f"sqlite:///{DATA_DIR / 'theophrastus_sessions.db'}"
+session_service = InMemorySessionService()
 
 APP_NAME = "Theophrastus_app"
 USER_ID = "test_user"
@@ -31,23 +37,32 @@ def _looks_like_env_snapshot_json(text: str) -> bool:
 
 async def main():
   evaluator = TheophrastusEvaluator(output_dir=Path("weather_advisor_agent/data/evaluations"))
-  
-  session_service = InMemorySessionService()
+
   await session_service.create_session(
     app_name=APP_NAME,
     user_id=USER_ID,
     session_id=SESSION_ID
   )
-  
+
   runner = Runner(
-    agent=Theophrastus_root_agent,
+    agent=root_agent,
     app_name=APP_NAME,
     session_service=session_service
   )
-  
+
   test_cases = [
     {
-      "query": "How is the weather in my city Sacramento, California?",
+      "query": "I love hiking and camping. Can you remember that for me?",
+      "complexity": "simple",
+      "description": "Store user preferences - should call store_user_preference"
+    },
+    {
+      "query": "What outdoor activities do I enjoy?",
+      "complexity": "simple",
+      "description": "Recall preferences - should call get_user_preferences"
+    },
+    {
+      "query": "How is the weather in my city Nezahualcoyotl, Mexico State?",
       "complexity": "simple",
       "description": "Simple weather query for known location"
     },
@@ -191,6 +206,41 @@ async def main():
 
   Theophrastus_Observability.export_traces("test")
   
+  print("\n" + "="*80)
+  print("SESSION MEMORY INSPECTION")
+  print("="*80 + "\n")
+  
+  final_session = await session_service.get_session(
+    app_name=APP_NAME,
+    user_id=USER_ID,
+    session_id=SESSION_ID
+  )
+  
+  # Show user-scoped memory (persists across sessions with user: prefix)
+  print("User Memory (would persist with DatabaseSessionService):")
+  user_memory = {k: v for k, v in final_session.state.items() if k.startswith("user:")}
+  if user_memory:
+    for key, value in user_memory.items():
+      print(f"\n  {key}:")
+      if isinstance(value, dict):
+        for sub_key, sub_value in value.items():
+          print(f"    {sub_key}: {str(sub_value)[:100]}...")
+      elif isinstance(value, list):
+        print(f"    {len(value)} items")
+        for idx, item in enumerate(value[:3]):  # Show first 3
+          print(f"      [{idx}]: {str(item)[:80]}...")
+      else:
+        print(f"    {str(value)[:100]}...")
+  else:
+    print("  (No user memory stored - memory tools were not called)")
+  
+  # Show all state keys for debugging
+  print("\n" + "="*80)
+  print("All Session State Keys:")
+  print("="*80)
+  for key in final_session.state.keys():
+    print(f"  - {key}")
+
   print("\n" + "="*80)
   print("TEST RUN COMPLETE")
   print("="*80)

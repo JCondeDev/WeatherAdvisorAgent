@@ -2,17 +2,15 @@ import json
 import logging
 
 from google.adk.agents import Agent, LoopAgent
-from google.genai.types import Content, Part
 from google.adk.tools import FunctionTool, google_search
-from google.adk.agents.callback_context import CallbackContext
 
-from weather_advisor_agent.config import config
+from weather_advisor_agent.config import TheophrastusConfiguration
 
 from weather_advisor_agent.tools import geocode_place_name
 
 from weather_advisor_agent.utils import Theophrastus_Observability, session_cache
 
-from weather_advisor_agent.validation_checkers import EnvLocationGeoValidationChecker
+from weather_advisor_agent.utils.validation_checkers import EnvLocationGeoValidationChecker
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,6 @@ def atlas_location_callback(*args, **kwargs):
       return None
   
   if isinstance(locations, list) and locations:
-    # FIX: Store as list, NOT as JSON string
     state["env_location_options"] = locations
     session_cache.store_evaluation_data(ctx.session.id,{"env_location_options": locations})
     
@@ -62,7 +59,7 @@ def atlas_location_callback(*args, **kwargs):
     return None
 
 atlas_env_location_geocode_agent = Agent(
-  model=config.mapper_model,
+  model=TheophrastusConfiguration.mapper_model,
   name="atlas_env_location_geocode_agent",
   description="Converts discovered location names into coordinates.",
   instruction="""
@@ -116,7 +113,7 @@ atlas_env_location_geocode_agent = Agent(
 
 
 atlas_env_location_discovery_agent = Agent(
-  model=config.mapper_model,
+  model=TheophrastusConfiguration.mapper_model,
   name="atlas_env_location_discovery_agent",
   description="Finds nearby candidate locations for outdoor activities.",
   instruction="""

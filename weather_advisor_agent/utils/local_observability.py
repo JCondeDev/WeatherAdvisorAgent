@@ -1,3 +1,8 @@
+"""
+Developed a built-in local observavility and log module
+for testing, diagnostics and watch behaviour if agents and tools.
+Useful for debbuging strange behaviours of agents when running tests without UI.
+"""
 import logging
 import time
 import json

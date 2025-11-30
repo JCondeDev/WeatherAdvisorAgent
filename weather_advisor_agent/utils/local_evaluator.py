@@ -1,7 +1,13 @@
+"""
+Developed a built-in local evaluator for testing, diagnostics and watch behaviour of agents and tools when the UI Eval integration
+was having executing errors.
+Useful to see how efective is the agent is working and if something is missing without the integrated UI.
+Helped me to localize loss of agent keys requiered for each response.
+Still working in the functionality for 1,2 output keys cases.
+"""
 import json
 import logging
 import datetime
-
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
@@ -218,45 +224,121 @@ class TheophrastusEvaluator:
       passed=score >= 0.8
     )
 
-  def evaluate_workflow_completeness(self, session_state: Dict[str, Any]) -> EvaluationResult:
-    """Evaluate if the full workflow completed successfully"""
-    required_keys = [
-      "env_snapshot",
-      "env_risk_report",
-      "env_advice_markdown"
-    ]
+  def evaluate_workflow_completeness(self, session_state: Dict[str, Any], complexity: str = "medium") -> EvaluationResult:
+    """
+    Evaluate if the workflow completed successfully based on query complexity.
     
+    Different query types require different workflows:
+    - "simple" weather query: Only needs env_snapshot
+    - "medium" location search: Only needs env_location_options  
+    - "medium" weather for locations: Needs env_snapshot + env_risk_report + env_advice_markdown
+    - "complex" full report: Needs all workflow steps
+    
+    Args:
+        session_state: Current session state
+        complexity: Query complexity level
+    
+    Returns:
+        EvaluationResult with workflow completeness assessment
+    """
     def is_valid_value(value: Any) -> bool:
       """Check if a value is actually valid, not just truthy"""
       if value is None:
         return False
-      
       if isinstance(value, dict):
         return len(value) > 0
-      
       if isinstance(value, list):
         return len(value) > 0
-      
       if isinstance(value, str):
         return len(value.strip()) > 0
-      
       return bool(value)
     
-    present_keys = sum(1 for key in required_keys if key in session_state and is_valid_value(session_state[key]))
-
-    score = present_keys / len(required_keys)
+    # Check what workflow components are present
+    has_snapshot = "env_snapshot" in session_state and is_valid_value(session_state["env_snapshot"])
+    has_locations = "env_location_options" in session_state and is_valid_value(session_state["env_location_options"])
+    has_risk = "env_risk_report" in session_state and is_valid_value(session_state["env_risk_report"])
+    has_advice = "env_advice_markdown" in session_state and is_valid_value(session_state["env_advice_markdown"])
     
-    details = f"Workflow steps completed: {present_keys}/{len(required_keys)}"
-    if present_keys < len(required_keys):
-      missing = [key for key in required_keys if key not in session_state or not is_valid_value(session_state[key])]
-      details += f" (missing: {', '.join(missing)})"
+    # SIMPLE queries - just weather data
+    if complexity == "simple":
+        if has_snapshot:
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=1.0,
+                details="Simple weather query completed successfully",
+                passed=True
+            )
+        else:
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=0.0,
+                details="Missing env_snapshot for weather query",
+                passed=False
+            )
     
-    return EvaluationResult(
-      category="workflow_completeness",
-      score=score,
-      details=details,
-      passed=score >= 1.0
-    )
+    # MEDIUM queries - either location search OR weather with advice
+    elif complexity == "medium":
+        # Case 1: Pure location search (has locations, no weather data yet)
+        if has_locations and not has_snapshot:
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=1.0,
+                details="Location search completed successfully",
+                passed=True
+            )
+        
+        # Case 2: Weather data for locations (should have snapshot + risk + advice)
+        elif has_snapshot:
+            required = ["env_snapshot", "env_risk_report", "env_advice_markdown"]
+            present = [k for k in required if k in session_state and is_valid_value(session_state[k])]
+            score = len(present) / len(required)
+            
+            if score >= 1.0:
+                return EvaluationResult(
+                    category="workflow_completeness",
+                    score=1.0,
+                    details=f"Complete workflow: {len(present)}/{len(required)} steps",
+                    passed=True
+                )
+            else:
+                missing = [k for k in required if k not in session_state or not is_valid_value(session_state[k])]
+                return EvaluationResult(
+                    category="workflow_completeness",
+                    score=score,
+                    details=f"Workflow steps completed: {len(present)}/{len(required)} (missing: {', '.join(missing)})",
+                    passed=False
+                )
+        
+        # Case 3: Neither locations nor snapshot (incomplete)
+        else:
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=0.0,
+                details="No workflow components found (expected location search or weather data)",
+                passed=False
+            )
+    
+    # COMPLEX queries - full report with all components
+    else:  # complexity == "complex"
+        required = ["env_snapshot", "env_risk_report", "env_advice_markdown"]
+        present = [k for k in required if k in session_state and is_valid_value(session_state[k])]
+        score = len(present) / len(required)
+        
+        if score >= 1.0:
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=1.0,
+                details=f"Complete workflow: {len(present)}/{len(required)} steps",
+                passed=True
+            )
+        else:
+            missing = [k for k in required if k not in session_state or not is_valid_value(session_state[k])]
+            return EvaluationResult(
+                category="workflow_completeness",
+                score=score,
+                details=f"Workflow steps completed: {len(present)}/{len(required)} (missing: {', '.join(missing)})",
+                passed=False
+            )
   
   def evaluate_response_time(self, duration_seconds: float, complexity: str = "simple") -> EvaluationResult:
     """Evaluate response time performance"""
@@ -284,100 +366,93 @@ class TheophrastusEvaluator:
       details=details,
       passed=duration_seconds <= threshold * 1.5
     )
-
+  
   def run_full_evaluation(
-    self,
-    session_id: str,
-    session_state: Dict[str, Any],
-    duration_seconds: Optional[float] = None,
-    complexity: str = "medium"
+      self,
+      session_id: str,
+      session_state: Dict[str, Any],
+      duration_seconds: Optional[float] = None,
+      complexity: str = "medium"
   ) -> FullEvaluationReport:
-    """Run complete evaluation on a Theophrastus session"""
-    
-    evaluation_data = session_state.get("_evaluation_snapshot", {})
-    
-    if not evaluation_data:
-      evaluation_data = session_state
-    
-    #Diagnosis code fragment
-    # print(f"\n{'='*80}")
-    # print("DEBUG: CAPTURED SESSION STATE ANALYSIS")
-    
-    # if not evaluation_data or evaluation_data == {}:
-    #   print("CRITICAL: captured_session_state is empty dict!")
-    # else:
-    #   print(f"State captured successfully")
-    #   print(f"Total keys in state: {len(evaluation_data)}.\n")
-    #   print(f"All keys in state: {list(evaluation_data.keys())}.\n")
+      """Run complete evaluation on a Theophrastus session"""
       
-    #   for key in ["env_snapshot", "env_risk_report", "env_advice_markdown"]:
-    #     if key in evaluation_data:
-    #       value = evaluation_data[key]
-    #       if isinstance(value, str):
-    #         print(f"{key}: PRESENT - string with {len(value)} chars.")
-    #       elif isinstance(value, (dict, list)):
-    #         print(f"{key}: PRESENT - {type(value).__name__}.")
-    #       else:
-    #         print(f"{key}: PRESENT - {type(value).__name__}.")
-    #     else:
-    #       print(f"{key}: MISSING from state.")
+      # Check for _evaluation_snapshot first (where callback stores data)
+      evaluation_data = session_state.get("_evaluation_snapshot", {})
       
-    #   print(f"\nOutput Keys:")
-    #   for key, value in evaluation_data.items():
-    #     if isinstance(value, str):
-    #       print(f"   {key}: str (length: {len(value)}).")
-    #     elif isinstance(value, list):
-    #       print(f"   {key}: list (length: {len(value)}).")
-    #     elif isinstance(value, dict):
-    #       print(f"   {key}: dict (keys: {len(value)}).")
-    #     else:
-    #       print(f"   {key}: {type(value).__name__}.")
-    
-    evaluations = []
-    
-    if "env_snapshot" in evaluation_data:
-      snapshot = evaluation_data["env_snapshot"]
-      if isinstance(snapshot, str):
-        try:
-          snapshot = json.loads(snapshot)
-        except:
-          pass
-      evaluations.append(self.evaluate_data_completeness(snapshot))
-    
-    if "env_location_options" in evaluation_data:
-        evaluations.append(self.evaluate_location_search(evaluation_data["env_location_options"]))
-
-    if "env_risk_report" in evaluation_data:evaluations.append(self.evaluate_risk_assessment(evaluation_data["env_risk_report"]))
-    
-    if "env_advice_markdown" in evaluation_data:evaluations.append(self.evaluate_recommendation_quality(evaluation_data["env_advice_markdown"]))
-    
-    evaluations.append(self.evaluate_workflow_completeness(evaluation_data))
-    
-    if duration_seconds is not None:
-      evaluations.append(self.evaluate_response_time(duration_seconds, complexity))
-    
-    overall_score = sum(e.score for e in evaluations) / len(evaluations) if evaluations else 0.0
-    passed = all(e.passed for e in evaluations)
-    
-    passed_count = sum(1 for e in evaluations if e.passed)
-    summary = f"{passed_count}/{len(evaluations)} evaluations passed. Overall score: {overall_score:.2%}"
-    
-    report = FullEvaluationReport(
-      session_id=session_id,
-      timestamp=datetime.datetime.now().isoformat(),
-      overall_score=overall_score,
-      passed=passed,
-      evaluations=evaluations,
-      summary=summary
-    )
-    self.evaluation_history.append(report)
-    
-    logger.info(f"Evaluation complete: {summary}")
-    for eval_result in evaluations:
-      status = "PASSED" if eval_result.passed else "FAILED"
-      logger.info(f"  {status} - {eval_result.category}: {eval_result.score:.2%} - {eval_result.details}.\n")
-    
-    return report
+      # If no _evaluation_snapshot, use session_state directly as fallback
+      if not evaluation_data:
+          evaluation_data = session_state
+      
+      evaluations = []
+      
+      # Use evaluation_data instead of session_state for all checks
+      # 1. Data completeness
+      if "env_snapshot" in evaluation_data:
+          snapshot = evaluation_data["env_snapshot"]
+          # Parse if string
+          if isinstance(snapshot, str):
+              try:
+                  snapshot = json.loads(snapshot)
+              except:
+                  pass
+          evaluations.append(
+              self.evaluate_data_completeness(snapshot)
+          )
+      
+      # 2. Location search (if applicable)
+      if "env_location_options" in evaluation_data:
+          evaluations.append(
+              self.evaluate_location_search(evaluation_data["env_location_options"])
+          )
+      
+      # 3. Risk assessment
+      if "env_risk_report" in evaluation_data:
+          evaluations.append(
+              self.evaluate_risk_assessment(evaluation_data["env_risk_report"])
+          )
+      
+      # 4. Recommendation quality
+      if "env_advice_markdown" in evaluation_data:
+          evaluations.append(
+              self.evaluate_recommendation_quality(evaluation_data["env_advice_markdown"])
+          )
+      
+      # 5. Workflow completeness - PASS COMPLEXITY HERE!
+      evaluations.append(
+          self.evaluate_workflow_completeness(evaluation_data, complexity)
+      )
+      
+      # 6. Response time (if provided)
+      if duration_seconds is not None:
+          evaluations.append(
+              self.evaluate_response_time(duration_seconds, complexity)
+          )
+      
+      # Calculate overall score
+      overall_score = sum(e.score for e in evaluations) / len(evaluations) if evaluations else 0.0
+      passed = all(e.passed for e in evaluations)
+      
+      # Generate summary
+      passed_count = sum(1 for e in evaluations if e.passed)
+      summary = f"{passed_count}/{len(evaluations)} evaluations passed. Overall score: {overall_score:.2%}"
+      
+      report = FullEvaluationReport(
+          session_id=session_id,
+          timestamp=datetime.datetime.now().isoformat(),
+          overall_score=overall_score,
+          passed=passed,
+          evaluations=evaluations,
+          summary=summary
+      )
+      
+      self.evaluation_history.append(report)
+      
+      logger.info(f"Evaluation complete: {summary}")
+      for eval_result in evaluations:
+          status = "PASSED" if eval_result.passed else "FAILED"
+          logger.info(f"  {status} - {eval_result.category}: {eval_result.score:.2%} - {eval_result.details}")
+      
+      return report
     
   def save_evaluation(self, report: FullEvaluationReport) -> Path:
     """Save evaluation report to file"""

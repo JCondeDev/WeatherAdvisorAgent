@@ -2,21 +2,28 @@ import json
 import logging
 import datetime
 
-from google.adk.agents import Agent
 from google.genai.types import Content, Part
 from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
+from google.adk.models.google_llm import Gemini
 
-from weather_advisor_agent.config import config
+from weather_advisor_agent.config import TheophrastusConfiguration
 
 from weather_advisor_agent.sub_agents import (robust_env_data_agent,
   robust_env_risk_agent,
   robust_env_location_agent
 )
 
-from weather_advisor_agent.memory import TheophrastusMemory
-
-from weather_advisor_agent.tools.creation_tools import save_env_report_to_file
-
+from weather_advisor_agent.tools import (save_env_report_to_file,
+  store_user_preference,
+  get_user_preferences,
+  add_to_query_history,
+  get_query_history,
+  search_query_history,
+  store_favorite_location,
+  get_favorite_locations,
+  remove_favorite_location
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +36,12 @@ def Theophrastus_root_callback(*args, **kwargs):
     return None
   
   state = ctx.session.state
-
+  current_invocation_id = getattr(ctx, 'invocation_id', None)
+  last_advice_invocation = state.get("_last_advice_invocation_id")
+  
   advice = state.get("env_advice_markdown")
-  if advice:
+  if advice and current_invocation_id and current_invocation_id == last_advice_invocation:
+    state["_last_advice_invocation_id"] = current_invocation_id
     return Content(parts=[Part(text=advice)])
 
   for key in ["env_snapshot", "env_location_options", "env_risk_report", "env_advice_markdown"]:
@@ -61,26 +71,27 @@ def Theophrastus_root_callback(*args, **kwargs):
 
   return None
 
-Theophrastus_root_agent = Agent(
+root_agent = LlmAgent(
   name="envi_root_agent",
-  model=config.worker_model,
+  model=Gemini(model=TheophrastusConfiguration.root_model,retry_options=TheophrastusConfiguration.retry_config),
   description="Interactive environmental intelligence assistant.",
   instruction=f"""
   You are Theophrastus, an environmental intelligence assistant.
 
   MEMORY CAPABILITIES:
-    - You remember user preferences (activities, risk tolerance, favorite locations).
-    - You track recently queried locations.
-    - You learn from user patterns over time.
+    - Store user preferences: store_user_preference(tool_context, type, value)
+    - Recall preferences: get_user_preferences(tool_context)
+    - Track locations queried: add_to_query_history(tool_context, location, activity, weather)
+    - Recall past queries: get_query_history(tool_context) or search_query_history(tool_context, term)
+    - Save favorites: store_favorite_location(tool_context, location, notes)
+    - List favorites: get_favorite_locations(tool_context)
 
-  When a user returns, you can reference their:
-    - Favorite activities: {TheophrastusMemory.get_user_preference("current_user")}
-    - Recent locations: {TheophrastusMemory.get_recent_locations("current_user")}
-
-  You update memory whenever the user mentions:
-    - Activities they enjoy.
-    - Locations they visit frequently.
-    - Their comfort level with environmental risks.
+  WHEN TO USE MEMORY:
+    - User mentions preference: "I love hiking" → store_user_preference
+    - User asks about preferences: "What do I like?" → get_user_preferences
+    - After providing weather → add_to_query_history
+    - User asks "Where have I asked about?" → get_query_history
+    - User says "Save this as favorite" → store_favorite_location
 
   Your goals:
     - Help users understand weather and environmental conditions.
@@ -168,8 +179,17 @@ Theophrastus_root_agent = Agent(
   sub_agents=[
     robust_env_location_agent,
     robust_env_data_agent,
-    robust_env_risk_agent  # This now includes Aurora as its final step
+    robust_env_risk_agent  
   ],
-  tools=[FunctionTool(save_env_report_to_file)],
+  tools=[FunctionTool(save_env_report_to_file),
+    FunctionTool(store_user_preference),
+    FunctionTool(get_user_preferences),
+    FunctionTool(add_to_query_history),
+    FunctionTool(get_query_history),
+    FunctionTool(search_query_history),
+    FunctionTool(store_favorite_location),
+    FunctionTool(get_favorite_locations),
+    FunctionTool(remove_favorite_location)
+  ],
   after_agent_callback=Theophrastus_root_callback
 )

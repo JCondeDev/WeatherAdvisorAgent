@@ -1,6 +1,6 @@
 import logging
 
-from weather_advisor_agent.config import config
+from weather_advisor_agent.config import TheophrastusConfiguration
 
 from google.adk.agents import Agent
 from google.genai.types import Content, Part
@@ -28,7 +28,7 @@ def aurora_advice_callback(callback_context: CallbackContext) -> Content:
 
 
 aurora_env_advice_writer = Agent(
-  model=config.writer_model,
+  model=TheophrastusConfiguration.writer_model,
   name="aurora_env_advice_writer",
   description="Writes user-facing environmental advice based on data and risk report.",
   instruction="""
